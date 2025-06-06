@@ -6,13 +6,15 @@ import (
 	"log"
 	"net/http"
 	"sta/internal/middleware"
+	"sta/internal/middleware/ratelimit"
 	"time"
 )
 
 func Run(ctx context.Context, addr string, apiPrefix string) {
 	apiHandler := NewHandler()
-	rTask := middleware.RateLimit(middleware.Logger(apiHandler.RegisterRoutes()))
-	rMetrics := middleware.RateLimit(middleware.Logger(middleware.Auth(apiHandler.RegisterMetrics())))
+	rateLimit := ratelimit.NewRateIpLimit(2, 0.2)
+	rTask := middleware.Logger(rateLimit.Handle(apiHandler.RegisterRoutes()))
+	rMetrics := middleware.Logger(middleware.Auth(rateLimit.Handle(apiHandler.RegisterMetrics())))
 	mux := http.NewServeMux()
 	mux.Handle(apiPrefix+"/", http.StripPrefix(apiPrefix, rTask))
 	adminPrefix := apiPrefix + "/admin"

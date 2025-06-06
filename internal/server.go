@@ -5,16 +5,18 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"sta/internal/middleware"
 	"time"
 )
 
 func Run(ctx context.Context, addr string, apiPrefix string) {
 	apiHandler := NewHandler()
-	rTask := apiHandler.RegisterRoutes()
-	//rMetrics := apiHandler.RegisterMetrics()
-
+	rTask := middleware.RateLimit(middleware.Logger(apiHandler.RegisterRoutes()))
+	rMetrics := middleware.RateLimit(middleware.Logger(middleware.Auth(apiHandler.RegisterMetrics())))
 	mux := http.NewServeMux()
 	mux.Handle(apiPrefix+"/", http.StripPrefix(apiPrefix, rTask))
+	adminPrefix := apiPrefix + "/admin"
+	mux.Handle(adminPrefix+"/", http.StripPrefix(adminPrefix, rMetrics))
 
 	log.Println("Listening on", addr)
 	server := &http.Server{Addr: addr, Handler: mux}
@@ -33,14 +35,5 @@ func Run(ctx context.Context, addr string, apiPrefix string) {
 		log.Fatal("Server stopped error: ", err)
 	} else {
 		log.Println("Server gracefully stopped")
-	}
-}
-
-func healthHandler(resp http.ResponseWriter, req *http.Request) {
-	log.Println("health handler")
-	_, err := resp.Write([]byte("OK"))
-	if err != nil {
-		log.Fatal(err)
-		return
 	}
 }

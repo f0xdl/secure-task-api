@@ -3,6 +3,7 @@ package httpserver
 import (
 	"context"
 	"errors"
+	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
 	"sta/internal/handlers"
@@ -11,18 +12,30 @@ import (
 	"time"
 )
 
-func Run(ctx context.Context, addr string, apiPrefix string) {
+func Run(ctx context.Context, rdb *redis.Client, addr string, apiPrefix string) error {
 	log.Println("run webserver")
+	hRecovery := middleware.Recover
 	apiHandler := NewHandler()
 	authHandler := handlers.NewBasicAuthHandler()
 	authHandler.AddCredentials("admin", "T3st") //ONLY FOR MOCK
-	auth := middleware.NewBasicAuth(authHandler)
-	limit := ratelimit.NewRateIpLimit(2, 0.2)
-	r := middleware.Recover
+	auth, err := middleware.NewBasicAuth(authHandler)
+	if err != nil {
+		return err
+	}
+
+	var limit ratelimit.LimitHandler
+	if rdb == nil {
+		limit, err = ratelimit.NewRateIpLimit(2, 0.2)
+	} else {
+		limit, err = ratelimit.NewRedisRts(rdb, 1, 2, 5*time.Second)
+	}
+	if err != nil {
+		return err
+	}
 
 	log.Println("configure routes")
-	taskRouter := middleware.Logger(r(limit.Handle(apiHandler.RegisterRoutes())))
-	metricRouter := middleware.Logger(r(auth.Handle(limit.Handle(apiHandler.RegisterMetrics()))))
+	taskRouter := middleware.Logger(hRecovery(limit.Handle(apiHandler.RegisterRoutes())))
+	metricRouter := middleware.Logger(hRecovery(limit.Handle(auth.Handle(apiHandler.RegisterMetrics()))))
 	mux := http.NewServeMux()
 	mux.Handle(apiPrefix+"/", http.StripPrefix(apiPrefix, taskRouter))
 	adminPrefix := apiPrefix + "/admin"
@@ -46,4 +59,5 @@ func Run(ctx context.Context, addr string, apiPrefix string) {
 	} else {
 		log.Println("Server gracefully stopped")
 	}
+	return nil
 }

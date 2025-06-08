@@ -1,9 +1,9 @@
 package ratelimit
 
 import (
+	"fmt"
 	"golang.org/x/time/rate"
 	"net/http"
-	"strings"
 	"sync"
 )
 
@@ -13,12 +13,15 @@ type RateIpLimit struct {
 	rts       float64
 }
 
-func NewRateIpLimit(maxTokens int, rts float64) *RateIpLimit {
+func NewRateIpLimit(maxTokens int, rts float64) (*RateIpLimit, error) {
+	if maxTokens <= 0 || rts <= 0 {
+		return nil, fmt.Errorf("maxTokens and rts must be positive")
+	}
 	return &RateIpLimit{
 		maxTokens: maxTokens,
 		rts:       rts,
 		clients:   sync.Map{},
-	}
+	}, nil
 }
 
 func (limit *RateIpLimit) getLimiter(ip string) *rate.Limiter {
@@ -28,14 +31,6 @@ func (limit *RateIpLimit) getLimiter(ip string) *rate.Limiter {
 		limit.clients.Store(ip, l)
 	}
 	return l.(*rate.Limiter)
-}
-
-func getIp(req *http.Request) string {
-	fwdAddr := req.Header.Get("X-Forwarded-For")
-	if fwdAddr == "" {
-		fwdAddr = strings.Split(req.RemoteAddr, ":")[0]
-	}
-	return fwdAddr
 }
 
 func (limit *RateIpLimit) Handle(next http.Handler) http.Handler {

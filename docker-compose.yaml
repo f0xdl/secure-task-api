@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --loglevel warning
+    env_file:
+      - ".env"
+    volumes:
+      - cache:/data
+volumes:
+  cache:
+    driver: local

@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// ResponseWriterWithStatus Writer with save status code for logging middleware
 type ResponseWriterWithStatus struct {
 	http.ResponseWriter
 	Status int
@@ -20,6 +21,7 @@ func (w *ResponseWriterWithStatus) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
+// Logger Middleware
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		start := time.Now()

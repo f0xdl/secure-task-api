@@ -52,12 +52,13 @@ func (limit *CustomTokenBucketLimit) available() bool {
 }
 
 func (limit *CustomTokenBucketLimit) refill() {
-	addedTokens := uint(time.Now().Sub(limit.refilledAt).Seconds()) * limit.rts
+	now := time.Now()
+	addedTokens := uint(now.Sub(limit.refilledAt).Seconds()) * limit.rts
 	if addedTokens > 0 {
 		limit.tokens += addedTokens
 		if limit.tokens > limit.maxTokens {
 			limit.tokens = limit.maxTokens
 		}
-		limit.refilledAt = time.Now()
+		limit.refilledAt = now
 	}
 }

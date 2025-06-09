@@ -36,7 +36,7 @@ func TestBasicAuth_WrongUsers(t *testing.T) {
 	mw, err := NewBasicAuth(a)
 	assert.Nil(t, err)
 	h := mw.Handle(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Error(t, errors.New("not allowed"))
+		w.WriteHeader(http.StatusOK)
 	}))
 	for user, pass := range wrongUsers {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)

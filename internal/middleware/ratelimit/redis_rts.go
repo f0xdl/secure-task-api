@@ -1,7 +1,6 @@
 package ratelimit
 
 import (
-	"context"
 	"fmt"
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/redis/go-redis/v9"
@@ -33,7 +32,7 @@ func NewRedisRts(db *redis.Client, rate, burst int, period time.Duration) (*Redi
 
 func (limit *RedisRts) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		ok, err := limit.limiter.Allow(context.Background(), getIp(req), limit.limit)
+		ok, err := limit.limiter.Allow(req.Context(), getIp(req), limit.limit)
 		if err != nil {
 			http.Error(resp, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return

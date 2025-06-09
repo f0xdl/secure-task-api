@@ -6,27 +6,30 @@ import (
 	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
-	"sta/internal/handlers"
 	"sta/internal/middleware"
 	"sta/internal/middleware/ratelimit"
 	"time"
 )
 
-func Run(ctx context.Context, rdb *redis.Client, addr string, apiPrefix string) error {
-	log.Println("run webserver")
+type Config struct {
+	Host      string
+	ApiPrefix string
+}
+
+func Run(ctx context.Context, rdb *redis.Client, auth middleware.IAuth, cfg Config) error {
 	hRecovery := middleware.Recover
-	apiHandler := NewHandler()
-	authHandler := handlers.NewBasicAuthHandler()
-	authHandler.AddCredentials("admin", "T3st") //ONLY FOR MOCK
-	auth, err := middleware.NewBasicAuth(authHandler)
+	apiRoutes := NewRoutes()
+	aa, err := middleware.NewBasicAuth(auth)
 	if err != nil {
 		return err
 	}
 
 	var limit ratelimit.LimitHandler
 	if rdb == nil {
+		log.Println("Using in-memory rate limiter")
 		limit, err = ratelimit.NewRateIpLimit(2, 0.2)
 	} else {
+		log.Println("Using Redis rate limiter")
 		limit, err = ratelimit.NewRedisRts(rdb, 1, 2, 5*time.Second)
 	}
 	if err != nil {
@@ -34,15 +37,14 @@ func Run(ctx context.Context, rdb *redis.Client, addr string, apiPrefix string) 
 	}
 
 	log.Println("configure routes")
-	taskRouter := middleware.Logger(hRecovery(limit.Handle(apiHandler.RegisterRoutes())))
-	metricRouter := middleware.Logger(hRecovery(limit.Handle(auth.Handle(apiHandler.RegisterMetrics()))))
+	taskRoutes := middleware.Logger(hRecovery(limit.Handle(apiRoutes.ApiRoutes())))
+	metricRoutes := middleware.Logger(hRecovery(limit.Handle(aa.Handle(apiRoutes.AdminMetrics()))))
 	mux := http.NewServeMux()
-	mux.Handle(apiPrefix+"/", http.StripPrefix(apiPrefix, taskRouter))
-	adminPrefix := apiPrefix + "/admin"
-	mux.Handle(adminPrefix+"/", http.StripPrefix(adminPrefix, metricRouter))
+	mux.Handle(cfg.ApiPrefix+"/", http.StripPrefix(cfg.ApiPrefix, taskRoutes))
+	mux.Handle(cfg.ApiPrefix+"/admin/", http.StripPrefix(cfg.ApiPrefix+"/admin", metricRoutes))
 
-	log.Println("Listening on", addr)
-	server := &http.Server{Addr: addr, Handler: mux}
+	log.Println("Listening on", cfg.Host)
+	server := &http.Server{Addr: cfg.Host, Handler: mux}
 	go func() {
 		err := server.ListenAndServe()
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -51,7 +53,7 @@ func Run(ctx context.Context, rdb *redis.Client, addr string, apiPrefix string) 
 	}()
 	<-ctx.Done()
 
-	log.Println("Stop serving on", addr)
+	log.Println("Stop serving on", cfg.Host)
 	ctxStop, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctxStop); err != nil {

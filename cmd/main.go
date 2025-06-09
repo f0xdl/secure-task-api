@@ -2,29 +2,39 @@ package main
 
 import (
 	"context"
+	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"log"
+	"os"
 	"os/signal"
+	"sta/internal/handlers"
 	"sta/internal/httpserver"
 )
 
 func main() {
+	_ = godotenv.Load() //
 	ctx, cancel := signal.NotifyContext(context.Background())
 	defer cancel()
 
+	log.Println("connecting Redis")
 	rdb := redis.NewClient(&redis.Options{
-		Addr: "127.0.0.1:6379",
+		Addr: os.Getenv("REDIS_HOST"),
 	})
 	err := rdb.Ping(ctx).Err()
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("error connecting to Redis: %v", err)
 	}
-	err = rdb.FlushDB(ctx).Err()
+
+	log.Println("build authorization")
+	auth := handlers.NewBasicAuthHandler()
+	auth.AddCredentials(os.Getenv("AUTH_USERNAME"), os.Getenv("AUTH_PASSWORD"))
+
+	log.Println("run webserver")
+	err = httpserver.Run(ctx, rdb, auth, httpserver.Config{
+		Host:      os.Getenv("HOST"),
+		ApiPrefix: os.Getenv("API_PREFIX"),
+	})
 	if err != nil {
-		log.Fatalln(err)
-	}
-	err = httpserver.Run(ctx, rdb, ":8080", "/api/v1")
-	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("error starting HTTP server: %v", err)
 	}
 }

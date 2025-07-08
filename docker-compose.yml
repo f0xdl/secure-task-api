@@ -3,13 +3,23 @@ services:
   redis:
     image: redis:latest
     restart: always
+    hostname: redis
     ports:
-      - '6379:6379'
+      - '6379:6379' #ONLY FOR DEBUG
     command: redis-server --loglevel warning
     env_file:
       - ".env"
     volumes:
       - cache:/data
+  app:
+    build: .
+    restart: always
+    depends_on:
+      - redis
+    ports:
+      - '8080:8080'
+    env_file:
+      - ".env"
 volumes:
   cache:
     driver: local

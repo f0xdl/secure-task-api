@@ -3,11 +3,11 @@ package httpserver
 import (
 	"context"
 	"errors"
+	"github.com/f0xdl/secure-task-api/internal/middleware"
+	"github.com/f0xdl/secure-task-api/internal/middleware/ratelimit"
 	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
-	"sta/internal/middleware"
-	"sta/internal/middleware/ratelimit"
 	"time"
 )
 

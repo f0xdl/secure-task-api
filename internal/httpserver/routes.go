@@ -1,8 +1,8 @@
 package httpserver
 
 import (
+	"github.com/f0xdl/secure-task-api/internal/handlers"
 	"net/http"
-	"sta/internal/handlers"
 )
 
 type Routes struct{}

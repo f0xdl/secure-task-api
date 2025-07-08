@@ -2,17 +2,15 @@ package main
 
 import (
 	"context"
-	"github.com/joho/godotenv"
+	"github.com/f0xdl/secure-task-api/internal/handlers"
+	"github.com/f0xdl/secure-task-api/internal/httpserver"
 	"github.com/redis/go-redis/v9"
 	"log"
 	"os"
 	"os/signal"
-	"sta/internal/handlers"
-	"sta/internal/httpserver"
 )
 
 func main() {
-	_ = godotenv.Load() //
 	ctx, cancel := signal.NotifyContext(context.Background())
 	defer cancel()
 

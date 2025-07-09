@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/github/license/Ileriayo/markdown-badges?style=for-the-badge)
 
 # Practice: Secure Task API
-## 📚Table of contents
+## 📚Table of contents [^1]
 - [Practice: Secure Task API](#practice-secure-task-api)
     * [📚Table of contents](#table-of-contents)
     * [📝Description](#description)
@@ -16,7 +16,7 @@
         + [Environment](#environment)
         + [Launch with Docker](#launch-with-docker)
         + [Custom Launch](#custom-launch)
-    * [Routes](#routes)
+    * [🔀Routes](#routes)
         + [Mock запрос на выполнения операций (without auth).](#mock-request-for-operations-without-auth)
         + [Mock запрос с авторизацией для получения метрик.](#mock-request-with-auth-to-get-metrics)
     * [🧪Testing](#testing)
@@ -96,7 +96,7 @@ docker compose down
 ```shell
 source .env && go run  ./cmd/main.go
 ```
-## Routes
+## 🔀Routes
 ### Mock request for operations (without auth)
 ```http request
 POST http://localhost:8080/api/v1/task HTTP/1.1
@@ -132,3 +132,7 @@ internal/
   middleware/   
   httpserver/
 ```
+
+
+[^1]: [Table of contents generated with markdown-toc](http://ecotrust-canada.github.io/markdown-toc/)
+ 

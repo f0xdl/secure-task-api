@@ -22,8 +22,6 @@
     * [🧪Testing](#testing)
     * [📁Folder structure](#folder-structure)
 
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
-
 ## 📝Description
 Secure Task API is a minimalistic HTTP server on Go designed to practice secure API design.
 It includes a basic task system with 
